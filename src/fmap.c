@@ -34,7 +34,9 @@ FMAP_T
 {
 	FILE	*fp = NULL;
 	int	n_fme;
-	char	line[256], kword[256], value[256];
+	char	*line = NULL;
+	size_t	s_line = 0;
+	char	kword[256], value[256];
 	char	*lp, *kwp, *vp;
 	char	*root = NULL;
 	char	*format = NULL;
@@ -76,7 +78,7 @@ FMAP_T
 	fmap->f_nentries = UNDEF;
 	fmap->f_entries = NULL;
 
-	for(fm_lcnt = 0, n_fme = 0; fgets(line, sizeof(line), fp); ){
+	for(fm_lcnt = 0, n_fme = 0; getline(&line, &s_line, fp) > 0; ){
 		fm_lcnt++;
 		lp = trim(line);
 		if(*lp == '#' || *lp == '\0')
@@ -244,6 +246,9 @@ FMAP_T
 	}
 
 CLEAN_UP : ;
+
+	if(line != NULL)
+		free(line);
 
 	if(fp != NULL){
 		fclose(fp);
@@ -436,7 +441,8 @@ FMupd_fmap(FILE *dfp, FMAP_T *fmap)
 	int	n_fmidx;
 	int	nf, cf, f;
 	int	lcnt;
-	char	line[256];
+	char	*line = NULL;
+	size_t	s_line = 0;
 	char	*fields[10];
 	int	ok = 1;
 
@@ -451,7 +457,7 @@ FMupd_fmap(FILE *dfp, FMAP_T *fmap)
 		fmidx[f] = &fmap->f_entries[f];
 	qsort(fmidx, n_fmidx, sizeof(FM_ENTRY_T *), fmecmp_fn);
 
-	for(lcnt = 0; fgets(line, sizeof(line), dfp); ){
+	for(lcnt = 0; getline(&line, &s_line, dfp) > 0; ){
 		lcnt++;
 		nf = split(line, fields, " \t\n");
 		if(nf == 0)
@@ -478,6 +484,9 @@ FMupd_fmap(FILE *dfp, FMAP_T *fmap)
 	}
 
 CLEAN_UP : ;
+
+	if(line != NULL)
+		free(line);
 
 	if(fmidx != NULL){
 		free(fmidx);
@@ -769,7 +778,8 @@ static	FM_ENTRY_T	*
 readfme(FILE *fp, int count)
 {
 	FM_ENTRY_T	*fme = NULL, *fme1, *fme2;
-	char	line[256];
+	char	*line = NULL;
+	size_t	s_line = 0;
 	int	c, cf, nf, f;
 	char	*fields[20];
 	int	nrecs, done, err = 0;
@@ -780,7 +790,7 @@ readfme(FILE *fp, int count)
 		goto CLEAN_UP;
 	}
 
-	for(done = 0, fme1 = fme, c = 0; fgets(line, sizeof(line), fp); ){
+	for(done = 0, fme1 = fme, c = 0; getline(&line, &s_line, fp) > 0; ){
 		fm_lcnt++;
 		nf = split(line, fields, " \t\n");
 		if(nf == 0)
@@ -882,16 +892,19 @@ CLEAN_UP : ;
 
 	if(err && fme != NULL){
 		for(fme1 = fme, f = 0; f < count; f++, fme1++){
-			if(fme->f_dname != NULL)
-				free(fme->f_dname);
-			if(fme->f_fname != NULL)
-				free(fme->f_fname);
-			if(fme->f_hosts != NULL)
-				free(fme->f_hosts);
+			if(fme1->f_dname != NULL)
+				free(fme1->f_dname);
+			if(fme1->f_fname != NULL)
+				free(fme1->f_fname);
+			if(fme1->f_hosts != NULL)
+				free(fme1->f_hosts);
 		}
 		free(fme);
 		fme = NULL;
 	}
+
+	if(line != NULL)
+		free(line);
 
 	return  fme;
 }
