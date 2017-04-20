@@ -22,7 +22,6 @@ static	int	n_flags = sizeof(flags)/sizeof(flags[0]);
 int
 main(int argc, char *argv[])
 {
-//	int	ac, c;
 	int	a_stat = AS_OK;
 	const ARG_VAL_T	*a_val;
 	int	verbose = 0;
